@@ -20,6 +20,7 @@ set incsearch
 set lazyredraw
 set ruler
 set rulerformat=%l,%v
+set shortmess+=|
 
 let mapleader = "-"
 let maplocalleader = "\\"
@@ -69,6 +70,27 @@ augroup workflow_improvements
   " Save having to press shift in normal mode
   nnoremap ; :
   nnoremap : ;
+  " Auto-insert closing parenthesis/brace
+  inoremap ( ()<Left>
+  " )
+  inoremap { {}<Left>
+  " }
+
+  " Auto-delete closing parenthesis/brace
+  function! BetterBackSpace() abort
+      let cur_line = getline('.')
+      let before_char = cur_line[col('.')-2]
+      let after_char = cur_line[col('.')-1]
+      if (before_char == '(' && after_char == ')') || (before_char == '{' && after_char == '}')
+          return "\<Del>\<BS>"
+      else
+          return "\<BS>"
+  endfunction
+  inoremap <silent> <BS> <C-r>=BetterBackSpace()<CR>
+
+  " Skip over closing parenthesis/brace
+  inoremap <expr> ) getline('.')[col('.')-1] == ")" ? "\<Right>" : ")"
+  inoremap <expr> } getline('.')[col('.')-1] == "}" ? "\<Right>" : "}"
 augroup END
 
 augroup literal_air_quotes
@@ -83,6 +105,9 @@ augroup copy_paste_tools
 
   " Copys the whole file to your clipboard
   nnoremap <leader>c maggVG"*y`a
+
+  " Copys what's under visual to your clipboard
+  vnoremap <leader>c "*y
 augroup END
 
 augroup fancy_grep_quickfix
@@ -120,6 +145,25 @@ augroup better_navigation
 augroup END
 " }}}
 
+" Better grep in quickfix ------------------------- {{{
+augroup grep_in_quickfix
+  if executable('git')
+    " Prefer git-grep when available
+    set grepprg=git\ grep\ --no-color\ -n
+
+    function! <SID>GitGrep(search)
+      execute "silent grep! " . shellescape(a:search)
+      copen
+    endfunction
+
+    " Add a command-line command for grep to quickfix window
+    command! -nargs=1 GG :call <SID>GitGrep("<args>")
+    " Hack so I don't have to do capital letters for gg
+    cnoreabbrev gg GG
+  endif
+augroup END
+" }}}
+
 " Common type abbreviations ---------------------- {{{
 augroup arbitrary_abbreviations
   autocmd!
@@ -154,7 +198,20 @@ augroup END
 " Ruby file settings ---------------------- {{{
 augroup filetype_ruby
   autocmd!
+
+  function! RubySnippets()
+    inoreabbr <buffer> def def<CR>end<ESC>kA
+  endfunction
+
   autocmd FileType ruby nnoremap <buffer> <localleader>c I#<esc>
+
+  " Run rspec on current file
+  autocmd FileType ruby nnoremap <buffer> <leader>f :!bundle exec rspec --color %<cr>
+  " Run rspec on test(s) under cursor
+  autocmd FileType ruby nnoremap <buffer> <leader>l :exe '!bundle exec rspec --color %:'.line('.')<cr>
+
+  autocmd FileType ruby setlocal foldmethod=marker
+  autocmd FileType ruby call RubySnippets()
 augroup END
 " }}}
 
