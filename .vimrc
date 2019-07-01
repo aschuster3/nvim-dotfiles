@@ -188,7 +188,7 @@ augroup template_engine
   endfunction
 
   " Read in template files
-  autocmd BufNewFile *.* silent! execute '0r $HOME/.vim/templates/skeleton.' . expand("<afile>:e")
+  autocmd BufNewFile *.* silent! execute '0r $HOME/.config/nvim/templates/skeleton.' . expand("<afile>:e")
 
   " Run any dynamic scripts between [:VIM_EVAL:]...[:END_EVAL:] tags
   autocmd BufNewFile * %substitute#\[:VIM_EVAL:\]\(.\{-\}\)\[:END_EVAL:\]#\=eval(submatch(1))#ge
